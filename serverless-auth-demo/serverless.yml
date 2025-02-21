@@ -1,0 +1,46 @@
+service: serverless-auth-demo
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: dev
+  region: us-east-1
+  environment:
+    FIREBASE_PROJECT_ID: ${env:FIREBASE_PROJECT_ID}
+    FIREBASE_CLIENT_EMAIL: ${env:FIREBASE_CLIENT_EMAIL}
+    FIREBASE_PRIVATE_KEY: ${env:FIREBASE_PRIVATE_KEY}
+
+functions:
+  auth:
+    handler: functions/auth/handler.authenticate
+    events:
+      - http:
+          path: /auth/google
+          method: post
+          cors: true
+
+  protected:
+    handler: functions/demo/handler.demo
+    events:
+      - http:
+          path: /demo
+          method: get
+          cors: true
+          authorizer:
+            name: verifyToken
+            type: token
+            identitySource: method.request.header.Authorization
+
+  verifyToken:
+    handler: functions/auth/authorizer.verify
+
+plugins:
+  - serverless-offline
+
+custom:
+  serverless-offline:
+    httpPort: 3000
+
+package:
+  patterns:
+    - '!node_modules/.bin/**'
