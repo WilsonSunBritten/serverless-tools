@@ -71,7 +71,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: infrastructure
-        path: infrastructure/*.bicep
+        path: azure-webapp/infrastructure/*.bicep
 
   deploy:
     needs: build
