@@ -55,14 +55,27 @@ azure-webapp/
 The solution uses GitHub Actions for automated deployment:
 
 1. Set up GitHub repository
-2. Configure Azure credentials:
+2. Get your subscription ID and resource group:
+   ```bash
+   # List all subscriptions
+   az account list --output table
+
+   # Set and show your active subscription
+   az account set --subscription <subscription-name>
+   az account show --query id --output tsv
+
+   # List resource groups in your subscription
+   az group list --output table
+   ```
+
+3. Configure Azure credentials:
    ```bash
    az ad sp create-for-rbac --name "myapp-principal" --role contributor \
-     --scopes /subscriptions/{subscription-id}/resourceGroups/{resource-group} \
+     --scopes /subscriptions/$(az account show --query id -o tsv)/resourceGroups/<your-resource-group> \
      --sdk-auth
    ```
-3. Add the JSON output as a GitHub secret named `AZURE_CREDENTIALS`
-4. Create the following environments in GitHub:
+4. Add the JSON output as a GitHub secret named `AZURE_CREDENTIALS`
+5. Create the following environments in GitHub:
    - development
    - production
 5. Push to main branch or create a pull request to trigger the workflow
