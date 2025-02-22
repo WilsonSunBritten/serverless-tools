@@ -1,0 +1,103 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: webapp-${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+  REGISTRY_FUNCTION_NAME: registry-${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+  SAMPLE_FUNCTION_NAME: sample-${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+  ENVIRONMENT_NAME: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Publish WebApp
+      run: dotnet publish src/WebApp/WebApp.csproj -c Release -o webapp-published
+
+    - name: Publish RegistryFunction
+      run: dotnet publish src/RegistryFunction/RegistryFunction.csproj -c Release -o registry-function-published
+
+    - name: Publish SampleFunction
+      run: dotnet publish src/SampleFunction/SampleFunction.csproj -c Release -o sample-function-published
+
+    - name: Upload WebApp Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: webapp
+        path: webapp-published
+
+    - name: Upload RegistryFunction Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: registry-function
+        path: registry-function-published
+
+    - name: Upload SampleFunction Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: sample-function
+        path: sample-function-published
+
+    - name: Upload Bicep Files
+      uses: actions/upload-artifact@v3
+      with:
+        name: infrastructure
+        path: infrastructure/*.bicep
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Deploy Bicep template
+      uses: azure/arm-deploy@v1
+      with:
+        resourceGroupName: rg-${{ env.ENVIRONMENT_NAME }}
+        template: ./infrastructure/main.bicep
+        parameters: environmentName=${{ env.ENVIRONMENT_NAME }}
+
+    - name: Deploy WebApp
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        package: ./webapp
+
+    - name: Deploy Registry Function
+      uses: azure/functions-action@v1
+      with:
+        app-name: ${{ env.REGISTRY_FUNCTION_NAME }}
+        package: ./registry-function
+
+    - name: Deploy Sample Function
+      uses: azure/functions-action@v1
+      with:
+        app-name: ${{ env.SAMPLE_FUNCTION_NAME }}
+        package: ./sample-function

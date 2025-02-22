@@ -1,0 +1,89 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Azure Functions Demo</h1>
+    
+    <div class="mt-4">
+        <h2>Available Functions</h2>
+        <div id="functionsList" class="mt-3">
+            Loading functions...
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <h2>Function Response</h2>
+        <pre id="functionResponse" class="bg-light p-3 text-start">
+            Click a function to see its response
+        </pre>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        async function loadFunctions() {
+            try {
+                const response = await fetch('http://127.0.0.1:7071/api/ListFunctions', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const functions = await response.json();
+                
+                const functionsList = document.getElementById('functionsList');
+                functionsList.innerHTML = '';
+                
+                functions.forEach(func => {
+                    const button = document.createElement('button');
+                    button.className = 'btn btn-primary m-2';
+                    button.textContent = func.name;
+                    // Handle the case where url might be undefined
+                    const baseUrl = func.url || `http://127.0.0.1:7072`;
+                    // Replace localhost with 127.0.0.1 if present
+                    const functionUrl = baseUrl.includes('localhost') ? baseUrl.replace('localhost', '127.0.0.1') : baseUrl;
+                    button.onclick = () => callFunction(functionUrl);
+                    functionsList.appendChild(button);
+                });
+            } catch (error) {
+                document.getElementById('functionsList').innerHTML = 
+                    `<div class="text-danger">Error loading functions: ${error.message}</div>`;
+                console.error('Error:', error);
+            }
+        }
+
+        async function callFunction(url) {
+            try {
+                const response = await fetch(`${url}/api/SampleEndpoint`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                document.getElementById('functionResponse').textContent = 
+                    JSON.stringify(result, null, 2);
+            } catch (error) {
+                document.getElementById('functionResponse').textContent = 
+                    `Error calling function: ${error.message}`;
+                console.error('Error:', error);
+            }
+        }
+
+        // Load functions when page loads
+        document.addEventListener('DOMContentLoaded', loadFunctions);
+    </script>
+}
