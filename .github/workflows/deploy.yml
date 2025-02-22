@@ -25,19 +25,29 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: |
+        cd azure-webapp
+        dotnet restore
 
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: |
+        cd azure-webapp
+        dotnet build --configuration Release --no-restore
 
     - name: Publish WebApp
-      run: dotnet publish src/WebApp/WebApp.csproj -c Release -o webapp-published
+      run: |
+        cd azure-webapp
+        dotnet publish src/WebApp/WebApp.csproj -c Release -o ../webapp-published
 
     - name: Publish RegistryFunction
-      run: dotnet publish src/RegistryFunction/RegistryFunction.csproj -c Release -o registry-function-published
+      run: |
+        cd azure-webapp
+        dotnet publish src/RegistryFunction/RegistryFunction.csproj -c Release -o ../registry-function-published
 
     - name: Publish SampleFunction
-      run: dotnet publish src/SampleFunction/SampleFunction.csproj -c Release -o sample-function-published
+      run: |
+        cd azure-webapp
+        dotnet publish src/SampleFunction/SampleFunction.csproj -c Release -o ../sample-function-published
 
     - name: Upload WebApp Artifact
       uses: actions/upload-artifact@v4
