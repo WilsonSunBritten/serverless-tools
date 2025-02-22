@@ -8,10 +8,10 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: webapp-${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
-  REGISTRY_FUNCTION_NAME: registry-${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
-  SAMPLE_FUNCTION_NAME: sample-${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
   ENVIRONMENT_NAME: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+  RESOURCE_GROUP_NAME: ${{ secrets.AZURE_RESOURCE_GROUP }}
+  DEPLOYMENT_NAME: deployment-${{ github.run_number }}
+  # Dynamic app names will be set after Bicep deployment
 
 jobs:
   build:
@@ -91,24 +91,36 @@ jobs:
     - name: Deploy Bicep template
       uses: azure/arm-deploy@v1
       with:
-        resourceGroupName: myapp-rg
+        resourceGroupName: ${{ env.RESOURCE_GROUP_NAME }}
         template: ./infrastructure/main.bicep
         parameters: environmentName=${{ env.ENVIRONMENT_NAME }}
+        deploymentName: ${{ env.DEPLOYMENT_NAME }}
+
+    - name: Get Resource Names
+      id: get_names
+      run: |
+        UNIQUE_STRING=$(az group show --name ${{ env.RESOURCE_GROUP_NAME }} --query id --output tsv | md5sum | cut -c1-13)
+        echo "WEBAPP_NAME=webapp-${{ env.ENVIRONMENT_NAME }}-${UNIQUE_STRING}" >> $GITHUB_ENV
+        echo "REGISTRY_NAME=registry-${{ env.ENVIRONMENT_NAME }}-${UNIQUE_STRING}" >> $GITHUB_ENV
+        echo "SAMPLE_NAME=sample-${{ env.ENVIRONMENT_NAME }}-${UNIQUE_STRING}" >> $GITHUB_ENV
 
     - name: Deploy WebApp
       uses: azure/webapps-deploy@v2
       with:
-        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        app-name: ${{ env.WEBAPP_NAME }}
         package: ./webapp
+        deployment-name: ${{ env.DEPLOYMENT_NAME }}-webapp
 
     - name: Deploy Registry Function
       uses: azure/functions-action@v1
       with:
-        app-name: ${{ env.REGISTRY_FUNCTION_NAME }}
+        app-name: ${{ env.REGISTRY_NAME }}
         package: ./registry-function
+        deployment-name: ${{ env.DEPLOYMENT_NAME }}-registry
 
     - name: Deploy Sample Function
       uses: azure/functions-action@v1
       with:
-        app-name: ${{ env.SAMPLE_FUNCTION_NAME }}
+        app-name: ${{ env.SAMPLE_NAME }}
         package: ./sample-function
+        deployment-name: ${{ env.DEPLOYMENT_NAME }}-sample
