@@ -40,25 +40,25 @@ jobs:
       run: dotnet publish src/SampleFunction/SampleFunction.csproj -c Release -o sample-function-published
 
     - name: Upload WebApp Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: webapp
         path: webapp-published
 
     - name: Upload RegistryFunction Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: registry-function
         path: registry-function-published
 
     - name: Upload SampleFunction Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: sample-function
         path: sample-function-published
 
     - name: Upload Bicep Files
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: infrastructure
         path: infrastructure/*.bicep
@@ -70,7 +70,7 @@ jobs:
 
     steps:
     - name: Download all artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
 
     - name: Login to Azure
       uses: azure/login@v1
