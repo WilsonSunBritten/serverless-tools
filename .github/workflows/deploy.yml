@@ -90,7 +90,7 @@ jobs:
     - name: Deploy Bicep template
       uses: azure/arm-deploy@v1
       with:
-        resourceGroupName: rg-${{ env.ENVIRONMENT_NAME }}
+        resourceGroupName: myapp-rg
         template: ./infrastructure/main.bicep
         parameters: environmentName=${{ env.ENVIRONMENT_NAME }}
 
