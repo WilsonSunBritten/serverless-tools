@@ -88,14 +88,6 @@ jobs:
         enable-AzPSSession: true
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Deploy Bicep template
-      uses: azure/arm-deploy@v1
-      with:
-        resourceGroupName: ${{ env.RESOURCE_GROUP_NAME }}
-        template: ./infrastructure/main.bicep
-        parameters: environmentName=${{ env.ENVIRONMENT_NAME }}
-        deploymentName: ${{ env.DEPLOYMENT_NAME }}
-
     - name: Get Resource Names
       id: get_names
       run: |
@@ -103,6 +95,18 @@ jobs:
         echo "WEBAPP_NAME=webapp-${{ env.ENVIRONMENT_NAME }}-${UNIQUE_STRING}" >> $GITHUB_ENV
         echo "REGISTRY_NAME=registry-${{ env.ENVIRONMENT_NAME }}-${UNIQUE_STRING}" >> $GITHUB_ENV
         echo "SAMPLE_NAME=sample-${{ env.ENVIRONMENT_NAME }}-${UNIQUE_STRING}" >> $GITHUB_ENV
+
+    - name: Deploy Bicep template
+      uses: azure/arm-deploy@v1
+      with:
+        resourceGroupName: ${{ env.RESOURCE_GROUP_NAME }}
+        template: ./infrastructure/main.bicep
+        parameters: environmentName=${{ env.ENVIRONMENT_NAME }} webAppName=${{ env.WEBAPP_NAME }} registryFunctionName=${{ env.REGISTRY_NAME }} sampleFunctionName=${{ env.SAMPLE_NAME }}
+        deploymentName: ${{ env.DEPLOYMENT_NAME }}
+
+    # Add a delay to ensure Azure resources are fully provisioned
+    - name: Wait for resource provisioning
+      run: sleep 30
 
     - name: Deploy WebApp
       uses: azure/webapps-deploy@v2

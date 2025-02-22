@@ -1,8 +1,8 @@
 param location string = resourceGroup().location
 param environmentName string
-param webAppName string = 'webapp-${environmentName}-${uniqueString(resourceGroup().id)}'
-param registryFunctionName string = 'registry-${environmentName}-${uniqueString(resourceGroup().id)}'
-param sampleFunctionName string = 'sample-${environmentName}-${uniqueString(resourceGroup().id)}'
+param webAppName string
+param registryFunctionName string
+param sampleFunctionName string
 
 // App Service Plan for Web App
 resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
