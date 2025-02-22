@@ -1,16 +1,16 @@
 param location string = resourceGroup().location
 param environmentName string
-param webAppName string = 'webapp-${environmentName}'
-param registryFunctionName string = 'registry-${environmentName}'
-param sampleFunctionName string = 'sample-${environmentName}'
+param webAppName string = 'webapp-${environmentName}-${uniqueString(resourceGroup().id)}'
+param registryFunctionName string = 'registry-${environmentName}-${uniqueString(resourceGroup().id)}'
+param sampleFunctionName string = 'sample-${environmentName}-${uniqueString(resourceGroup().id)}'
 
 // App Service Plan for Web App
 resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
   name: 'asp-${environmentName}'
   location: location
   sku: {
-    name: 'B1'
-    tier: 'Basic'
+    name: 'D1'
+    tier: 'Shared'
   }
 }
 
