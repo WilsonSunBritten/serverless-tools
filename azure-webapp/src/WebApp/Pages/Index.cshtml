@@ -1,4 +1,4 @@
-﻿@page
+﻿﻿@page
 @model IndexModel
 @{
     ViewData["Title"] = "Home page";
@@ -26,7 +26,12 @@
     <script>
         async function loadFunctions() {
             try {
-                const response = await fetch('http://127.0.0.1:7071/api/ListFunctions', {
+                // Get the base URL from the current domain when deployed, fallback to localhost for development
+                const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                    ? 'http://127.0.0.1:7071'
+                    : `${window.location.origin}/api`;
+                    
+                const response = await fetch(`${baseUrl}/api/ListFunctions`, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json'
@@ -47,9 +52,8 @@
                     button.className = 'btn btn-primary m-2';
                     button.textContent = func.name;
                     // Handle the case where url might be undefined
-                    const baseUrl = func.url || `http://127.0.0.1:7072`;
-                    // Replace localhost with 127.0.0.1 if present
-                    const functionUrl = baseUrl.includes('localhost') ? baseUrl.replace('localhost', '127.0.0.1') : baseUrl;
+                    // Use the function URL if provided, otherwise use the same base URL
+                    const functionUrl = func.url || baseUrl;
                     button.onclick = () => callFunction(functionUrl);
                     functionsList.appendChild(button);
                 });
