@@ -107,4 +107,3 @@ The Bicep template (`infrastructure/main.bicep`) creates:
 - Add Azure Key Vault integration
 - Implement Table Storage for function registry
 - Add monitoring and logging
-- Implement staging environment
