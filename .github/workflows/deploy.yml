@@ -155,7 +155,7 @@ jobs:
         EOF
 
         # Create local.settings.json for Sample Function
-        cat > sample-function/local.settings.json << 'EOF'
+        cat > src/SampleFunction/local.settings.json << 'EOF'
         {
           "IsEncrypted": false,
           "Values": {
