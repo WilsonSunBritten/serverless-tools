@@ -161,7 +161,11 @@ The Bicep template (`infrastructure/main.bicep`) creates:
   - Sample Function tests
   - Web App tests
 - Added end-to-end tests using Playwright
-- Integrated tests into the CI/CD pipeline
+- Integrated tests into the CI/CD pipeline:
+  - Tests run pre-deployment in a simulated environment
+  - Azure Functions Core Tools and Azurite storage emulator are used
+  - Tests verify functionality before deployment to Azure
+  - Pipeline continues even if tests fail (with warnings) to prevent blocking deployments
 
 ## Future Enhancements
 
