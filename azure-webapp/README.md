@@ -10,6 +10,9 @@ azure-webapp/
 │   ├── WebApp/              # ASP.NET Core Web App
 │   ├── RegistryFunction/    # Function App for service discovery
 │   └── SampleFunction/      # Example Function App
+├── tests/
+│   ├── IntegrationTests/    # API and service integration tests
+│   └── E2ETests/            # End-to-end browser tests with Playwright
 ├── infrastructure/          # Bicep templates
 └── .github/
     └── workflows/          # GitHub Actions workflow definitions
@@ -49,6 +52,49 @@ azure-webapp/
    - WebApp: `dotnet run --project src/WebApp/WebApp.csproj`
    - RegistryFunction: `dotnet run --project src/RegistryFunction/RegistryFunction.csproj`
    - SampleFunction: `dotnet run --project src/SampleFunction/SampleFunction.csproj`
+
+## Testing
+
+The solution includes both integration tests and end-to-end tests:
+
+### Running Integration Tests
+
+1. Start the required services:
+   ```bash
+   # Start WebApp
+   dotnet run --project src/WebApp/WebApp.csproj --urls=http://localhost:5000
+
+   # Start Registry Function
+   dotnet run --project src/RegistryFunction/RegistryFunction.csproj
+
+   # Start Sample Function
+   dotnet run --project src/SampleFunction/SampleFunction.csproj
+   ```
+
+2. Run the integration tests:
+   ```bash
+   cd tests/IntegrationTests
+   dotnet test
+   ```
+
+### Running E2E Tests
+
+1. Install Playwright browsers:
+   ```bash
+   cd tests/E2ETests
+   dotnet add package Microsoft.Playwright
+   dotnet build
+   pwsh -c "& dotnet tool install --global Microsoft.Playwright.CLI"
+   pwsh -c "& playwright install"
+   ```
+
+2. Start the required services (same as for integration tests)
+
+3. Run the E2E tests:
+   ```bash
+   cd tests/E2ETests
+   dotnet test
+   ```
 
 ## Deployment
 
@@ -102,8 +148,24 @@ The Bicep template (`infrastructure/main.bicep`) creates:
 - All communications over HTTPS
 - Secrets managed through Azure Key Vault (to be implemented)
 
+## Recent Improvements
+
+### Deployment Enhancements
+- Fixed resource naming to prevent creating new apps with each deployment
+- Added resource existence check to update existing resources instead of creating new ones
+- Implemented incremental deployment mode for Bicep templates
+
+### Testing Infrastructure
+- Added integration tests for all components:
+  - Registry Function tests
+  - Sample Function tests
+  - Web App tests
+- Added end-to-end tests using Playwright
+- Integrated tests into the CI/CD pipeline
+
 ## Future Enhancements
 
 - Add Azure Key Vault integration
 - Implement Table Storage for function registry
 - Add monitoring and logging
+- Expand test coverage

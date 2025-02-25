@@ -73,8 +73,57 @@ jobs:
         name: infrastructure
         path: azure-webapp/infrastructure/*.bicep
 
-  deploy:
+    - name: Upload Tests
+      uses: actions/upload-artifact@v4
+      with:
+        name: tests
+        path: azure-webapp/tests/
+
+  test:
     needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+
+    - name: Install Playwright browsers
+      run: |
+        cd tests/E2ETests
+        dotnet add package Microsoft.Playwright
+        dotnet build
+        pwsh -c "& dotnet tool install --global Microsoft.Playwright.CLI"
+        pwsh -c "& playwright install"
+
+    - name: Start WebApp and Functions for testing
+      run: |
+        # Start WebApp in background
+        dotnet webapp/WebApp.dll --urls=http://localhost:5000 &
+        # Start Registry Function in background
+        cd registry-function && func start --port 7071 &
+        # Start Sample Function in background
+        cd ../sample-function && func start --port 7072 &
+        # Give some time for the services to start
+        sleep 10
+
+    - name: Run Integration Tests
+      run: |
+        cd tests/IntegrationTests
+        dotnet test --logger "console;verbosity=detailed"
+
+    - name: Run E2E Tests
+      run: |
+        cd tests/E2ETests
+        dotnet test --logger "console;verbosity=detailed"
+
+  deploy:
+    needs: [build, test]
     runs-on: ubuntu-latest
     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
 
@@ -91,22 +140,41 @@ jobs:
     - name: Get Resource Names
       id: get_names
       run: |
-        UNIQUE_STRING=$(az group show --name ${{ env.RESOURCE_GROUP_NAME }} --query id --output tsv | md5sum | cut -c1-13)
-        echo "WEBAPP_NAME=webapp-${{ env.ENVIRONMENT_NAME }}-${UNIQUE_STRING}" >> $GITHUB_ENV
-        echo "REGISTRY_NAME=registry-${{ env.ENVIRONMENT_NAME }}-${UNIQUE_STRING}" >> $GITHUB_ENV
-        echo "SAMPLE_NAME=sample-${{ env.ENVIRONMENT_NAME }}-${UNIQUE_STRING}" >> $GITHUB_ENV
+        echo "WEBAPP_NAME=webapp-${{ env.ENVIRONMENT_NAME }}" >> $GITHUB_ENV
+        echo "REGISTRY_NAME=registry-${{ env.ENVIRONMENT_NAME }}" >> $GITHUB_ENV
+        echo "SAMPLE_NAME=sample-${{ env.ENVIRONMENT_NAME }}" >> $GITHUB_ENV
+
+    - name: Check if resources exist
+      id: check_resources
+      run: |
+        WEBAPP_EXISTS=$(az webapp show --name ${{ env.WEBAPP_NAME }} --resource-group ${{ env.RESOURCE_GROUP_NAME }} --query id --output tsv 2>/dev/null || echo "false")
+        REGISTRY_EXISTS=$(az functionapp show --name ${{ env.REGISTRY_NAME }} --resource-group ${{ env.RESOURCE_GROUP_NAME }} --query id --output tsv 2>/dev/null || echo "false")
+        SAMPLE_EXISTS=$(az functionapp show --name ${{ env.SAMPLE_NAME }} --resource-group ${{ env.RESOURCE_GROUP_NAME }} --query id --output tsv 2>/dev/null || echo "false")
+        
+        if [[ "$WEBAPP_EXISTS" == "false" || "$REGISTRY_EXISTS" == "false" || "$SAMPLE_EXISTS" == "false" ]]; then
+          echo "Some resources don't exist, deploying infrastructure"
+          echo "DEPLOY_INFRA=true" >> $GITHUB_ENV
+        else
+          echo "All resources exist, skipping infrastructure deployment"
+          echo "DEPLOY_INFRA=false" >> $GITHUB_ENV
+        fi
 
     - name: Deploy Bicep template
       uses: azure/arm-deploy@v1
+      if: env.DEPLOY_INFRA == 'true'
       with:
         resourceGroupName: ${{ env.RESOURCE_GROUP_NAME }}
         template: ./infrastructure/main.bicep
         parameters: environmentName=${{ env.ENVIRONMENT_NAME }} webAppName=${{ env.WEBAPP_NAME }} registryFunctionName=${{ env.REGISTRY_NAME }} sampleFunctionName=${{ env.SAMPLE_NAME }}
         deploymentName: ${{ env.DEPLOYMENT_NAME }}
+        deploymentMode: 'Incremental'
 
-    # Add a delay to ensure Azure resources are fully provisioned
+    # Wait for resource provisioning only if we deployed new infrastructure
     - name: Wait for resource provisioning
-      run: sleep 30
+      if: env.DEPLOY_INFRA == 'true'
+      run: |
+        echo "Waiting for resources to be fully provisioned..."
+        sleep 30
 
     - name: Deploy WebApp
       uses: azure/webapps-deploy@v2
