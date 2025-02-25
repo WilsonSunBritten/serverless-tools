@@ -57,7 +57,47 @@ azure-webapp/
 
 The solution includes both integration tests and end-to-end tests:
 
-### Running Integration Tests
+### Running Tests with the Automated Script
+
+The easiest way to run tests is using the provided script, which handles starting all required services:
+
+#### On Linux/macOS:
+
+```bash
+# Make the script executable (first time only)
+chmod +x run-tests.sh
+
+# Run integration tests only
+./run-tests.sh
+
+# Run both integration and E2E tests
+./run-tests.sh --e2e
+```
+
+#### On Windows:
+
+```cmd
+# Run integration tests only
+run-tests.bat
+
+# Run both integration and E2E tests
+run-tests.bat --e2e
+```
+
+The script will:
+1. Start the Azure Storage Emulator (Azurite on Linux/macOS, Azure Storage Emulator on Windows)
+2. Start the WebApp, Registry Function, and Sample Function
+3. Verify all services are running with multiple retry attempts
+4. Run the integration tests (and optionally E2E tests)
+5. Clean up all processes when done
+
+The scripts include robust service health checks with multiple retry attempts to ensure all services are properly started before running tests. This helps prevent "connection refused" errors that can occur when tests run before services are fully initialized.
+
+### Running Tests Manually
+
+If you prefer to run tests manually:
+
+#### Running Integration Tests
 
 1. Start the required services:
    ```bash
@@ -77,9 +117,9 @@ The solution includes both integration tests and end-to-end tests:
    dotnet test
    ```
 
-### Running E2E Tests
+#### Running E2E Tests
 
-1. Install Playwright browsers:
+1. Install Playwright browsers (first time only):
    ```bash
    cd tests/E2ETests
    dotnet add package Microsoft.Playwright

@@ -193,13 +193,70 @@ jobs:
         
         # Give some time for the services to start
         echo "Waiting for services to start..."
-        sleep 20
+        sleep 30
         
-        # Check if services are running
-        echo "Checking if services are running..."
-        curl -s -o /dev/null -w "%{http_code}" http://localhost:5000 || echo "WebApp not responding"
-        curl -s -o /dev/null -w "%{http_code}" http://localhost:7071/api/ListFunctions || echo "Registry Function not responding"
-        curl -s -o /dev/null -w "%{http_code}" http://localhost:7072/api/SampleEndpoint || echo "Sample Function not responding"
+        # Function to check if a service is running with retries
+        check_service() {
+          local url=$1
+          local name=$2
+          local max_attempts=$3
+          local attempt=1
+          
+          echo "Checking if $name is running..."
+          
+          while [ $attempt -le $max_attempts ]; do
+            status_code=$(curl -s -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || echo "000")
+            if [ "$status_code" = "200" ]; then
+              echo "$name is running (status code: $status_code)"
+              return 0
+            else
+              echo "Attempt $attempt: $name is not responding yet (status code: $status_code), waiting..."
+              sleep 10
+              attempt=$((attempt + 1))
+            fi
+          done
+          
+          echo "ERROR: $name failed to start after $max_attempts attempts"
+          return 1
+        }
+        
+        # Check all services with retries
+        webapp_ok=false
+        registry_ok=false
+        sample_ok=false
+        
+        check_service "http://localhost:5000" "WebApp" 6
+        if [ $? -eq 0 ]; then
+          webapp_ok=true
+        fi
+        
+        check_service "http://localhost:7071/api/ListFunctions" "Registry Function" 6
+        if [ $? -eq 0 ]; then
+          registry_ok=true
+        fi
+        
+        check_service "http://localhost:7072/api/SampleEndpoint" "Sample Function" 6
+        if [ $? -eq 0 ]; then
+          sample_ok=true
+        fi
+        
+        # Check if all services are running
+        if [ "$webapp_ok" = true ] && [ "$registry_ok" = true ] && [ "$sample_ok" = true ]; then
+          echo "All services are running successfully"
+        else
+          echo "WARNING: Not all services started successfully. Tests may fail."
+          echo "Status: WebApp ($webapp_ok), Registry Function ($registry_ok), Sample Function ($sample_ok)"
+          
+          # Print logs for debugging
+          echo "=== WebApp Logs ==="
+          cat webapp/logs/*.log 2>/dev/null || echo "No WebApp logs found"
+          
+          echo "=== Registry Function Logs ==="
+          cat registry-function/logs/*.log 2>/dev/null || echo "No Registry Function logs found"
+          
+          echo "=== Sample Function Logs ==="
+          cat sample-function/logs/*.log 2>/dev/null || echo "No Sample Function logs found"
+        fi
 
     - name: Run Integration Tests
       run: |
