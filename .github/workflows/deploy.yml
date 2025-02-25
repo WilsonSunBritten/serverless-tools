@@ -92,6 +92,26 @@ jobs:
 
     - name: Download all artifacts
       uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Prepare artifacts for testing
+      run: |
+        # Create directories for the artifacts
+        mkdir -p webapp registry-function sample-function
+        
+        # Copy artifacts to the correct locations
+        cp -r artifacts/webapp/* webapp/
+        cp -r artifacts/registry-function/* registry-function/
+        cp -r artifacts/sample-function/* sample-function/
+        
+        # List contents to verify
+        echo "WebApp artifacts:"
+        ls -la webapp/
+        echo "Registry Function artifacts:"
+        ls -la registry-function/
+        echo "Sample Function artifacts:"
+        ls -la sample-function/
 
     - name: Install Azure Functions Core Tools
       run: |
@@ -176,8 +196,33 @@ jobs:
     - name: Start WebApp and Functions for testing
       run: |
         # Start WebApp in background
-        dotnet webapp/WebApp.dll --urls=http://localhost:5000 &
-        echo "Started WebApp"
+        # Check if WebApp.dll exists and is executable
+        if [ -f "webapp/WebApp.dll" ]; then
+          echo "WebApp.dll found, starting WebApp..."
+          dotnet webapp/WebApp.dll --urls=http://localhost:5000 &
+          echo "Started WebApp with dotnet command"
+        else
+          echo "ERROR: WebApp.dll not found in webapp directory"
+          echo "Contents of webapp directory:"
+          ls -la webapp/
+          
+          # Try alternative approach - find the WebApp.dll
+          echo "Searching for WebApp.dll..."
+          find webapp -name "WebApp.dll" -type f
+          
+          # Try to start using the published DLL if we can find it
+          WEBAPP_DLL=$(find webapp -name "WebApp.dll" -type f | head -1)
+          if [ -n "$WEBAPP_DLL" ]; then
+            echo "Found WebApp.dll at $WEBAPP_DLL, trying to start..."
+            dotnet "$WEBAPP_DLL" --urls=http://localhost:5000 &
+            echo "Started WebApp with alternative path"
+          else
+            # Last resort - try running from source
+            echo "Trying to run WebApp from source..."
+            dotnet run --project tests/WebApp/WebApp.csproj --urls=http://localhost:5000 &
+            echo "Started WebApp from source"
+          fi
+        fi
         
         # Start Registry Function in background
         cd registry-function
@@ -276,6 +321,29 @@ jobs:
     steps:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Prepare artifacts for deployment
+      run: |
+        # Create directories for the artifacts
+        mkdir -p webapp registry-function sample-function infrastructure
+        
+        # Copy artifacts to the correct locations
+        cp -r artifacts/webapp/* webapp/
+        cp -r artifacts/registry-function/* registry-function/
+        cp -r artifacts/sample-function/* sample-function/
+        cp -r artifacts/infrastructure/* infrastructure/
+        
+        # List contents to verify
+        echo "WebApp artifacts:"
+        ls -la webapp/
+        echo "Registry Function artifacts:"
+        ls -la registry-function/
+        echo "Sample Function artifacts:"
+        ls -la sample-function/
+        echo "Infrastructure artifacts:"
+        ls -la infrastructure/
 
     - name: Login to Azure
       uses: azure/login@v1
