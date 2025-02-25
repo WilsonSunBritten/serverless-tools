@@ -53,7 +53,7 @@ echo "WebApp started with PID: $WEBAPP_PID"
 # Start Registry Function
 echo "Starting Registry Function on port $REGISTRY_PORT..."
 cd src/RegistryFunction
-func start --port $REGISTRY_PORT &
+func start --port $REGISTRY_PORT --no-interactive &
 REGISTRY_PID=$!
 cd ../..
 echo "Registry Function started with PID: $REGISTRY_PID"
@@ -61,7 +61,7 @@ echo "Registry Function started with PID: $REGISTRY_PID"
 # Start Sample Function
 echo "Starting Sample Function on port $SAMPLE_PORT..."
 cd src/SampleFunction
-func start --port $SAMPLE_PORT &
+func start --port $SAMPLE_PORT --no-interactive &
 SAMPLE_PID=$!
 cd ../..
 echo "Sample Function started with PID: $SAMPLE_PID"

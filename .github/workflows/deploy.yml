@@ -227,13 +227,13 @@ jobs:
         
         # Start Registry Function in background
         cd registry-function
-        func start --port 7071 &
+        func start --port 7071 --no-interactive &
         echo "Started Registry Function"
         cd ..
         
         # Start Sample Function in background
         cd sample-function
-        func start --port 7072 &
+        func start --port 7072 --no-interactive &
         echo "Started Sample Function"
         cd ..
         

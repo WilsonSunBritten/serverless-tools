@@ -29,11 +29,11 @@ start "WebApp" cmd /c "dotnet run --project src\WebApp\WebApp.csproj --urls=http
 
 REM Start Registry Function
 echo Starting Registry Function on port %REGISTRY_PORT%...
-start "Registry Function" cmd /c "cd src\RegistryFunction && func start --port %REGISTRY_PORT%"
+start "Registry Function" cmd /c "cd src\RegistryFunction && func start --port %REGISTRY_PORT% --no-interactive"
 
 REM Start Sample Function
 echo Starting Sample Function on port %SAMPLE_PORT%...
-start "Sample Function" cmd /c "cd src\SampleFunction && func start --port %SAMPLE_PORT%"
+start "Sample Function" cmd /c "cd src\SampleFunction && func start --port %SAMPLE_PORT% --no-interactive"
 
 REM Wait for services to start
 echo Waiting for services to start...
