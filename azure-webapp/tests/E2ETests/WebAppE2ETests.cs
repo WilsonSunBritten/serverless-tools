@@ -51,12 +51,11 @@ public class WebAppE2ETests : IAsyncLifetime
         var page = await _browser.NewPageAsync(new BrowserNewPageOptions
         {
             BaseURL = _webAppBaseUrl,
-            ViewportSize = new ViewportSize { Width = 1280, Height = 720 },
-            Timeout = _timeout
+            ViewportSize = new ViewportSize { Width = 1280, Height = 720 }
         });
 
         // Act
-        await page.GotoAsync("/");
+        await page.GotoAsync("/", new PageGotoOptions { Timeout = _timeout });
         
         // Wait for functions to load (this might take some time if connecting to real functions)
         await page.WaitForSelectorAsync("#functionsList:not(:has-text('Loading functions...'))", 
@@ -85,12 +84,11 @@ public class WebAppE2ETests : IAsyncLifetime
         var page = await _browser.NewPageAsync(new BrowserNewPageOptions
         {
             BaseURL = _webAppBaseUrl,
-            ViewportSize = new ViewportSize { Width = 1280, Height = 720 },
-            Timeout = _timeout
+            ViewportSize = new ViewportSize { Width = 1280, Height = 720 }
         });
 
         // Act
-        await page.GotoAsync("/");
+        await page.GotoAsync("/", new PageGotoOptions { Timeout = _timeout });
         
         // Wait for functions to load
         await page.WaitForSelectorAsync("#functionsList:not(:has-text('Loading functions...'))", 
