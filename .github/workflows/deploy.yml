@@ -138,7 +138,7 @@ jobs:
       run: |
         # Create local.settings.json for Registry Function
         cd azure-webapp
-        cat > registryfunction/local.settings.json << 'EOF'
+        cat > src/RegistryFunction/local.settings.json << 'EOF'
         {
           "IsEncrypted": false,
           "Values": {
