@@ -119,7 +119,7 @@ jobs:
 
     - name: Install Playwright browsers
       run: |
-        cd tests/E2ETests
+        cd azure-webapp/tests/E2ETests
         dotnet add package Microsoft.Playwright
         dotnet build
         pwsh -c "& dotnet tool install --global Microsoft.Playwright.CLI"
